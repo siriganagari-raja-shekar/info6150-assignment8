@@ -12,4 +12,6 @@ usersRouter.put("/edit", userController.update);
 
 usersRouter.delete("/delete", userController.remove);
 
+usersRouter.post("/login", userController.login);
+
 module.exports = usersRouter;

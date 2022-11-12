@@ -156,7 +156,39 @@ const remove = async (req, res, next) =>{
             error: "Some error has occured on the server side. Please try again later"
         });
     }
-
 };
 
-module.exports = { get, create, update, remove};
+const login = async(req, res, next) =>{
+    const { email, password } = req.body;
+
+    if(!email || !password){
+        return res.status(400).json({
+            error: "Please send both email and password in the request"
+        });
+    }
+
+
+    const user = await userService.getOne(email);
+
+    if(!user){
+        return res.status(400).json({
+            error: "User with the specified email does not exist. Please check your email"
+        });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if(passwordMatch){
+        return res.status(200).json({
+            message: "Authorization successful"
+        });
+    }
+    else{
+        return res.status(400).json({
+            error: "Password is incorrect. Please try again"
+        });
+    }
+}
+
+
+module.exports = {get, create, update, remove, login};
