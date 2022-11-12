@@ -1,19 +1,15 @@
 const express = require("express");
-const User = require("./userModel").User;
-const validators = require("./utils/validators");
+const validators = require("./../utils/validators");
 const bcrypt = require("bcrypt");
-const middleware = require("./utils/middleware");
+const userService = require("./../services/userService");
 
-const usersRouter = express.Router();
 
-usersRouter.use(express.json());
-
-usersRouter.get("/getAll", async (req, res, next) =>{
-    const users = await User.find({});
+const get = async (req, res, next) =>{
+    const users = await userService.getAll();
     res.status(200).json(users);
-});
+};
 
-usersRouter.post("/create", async (req, res, next) =>{
+const create = async (req, res, next) =>{
     const { email, fullname, password } = req.body;
 
     if( !email || !fullname || !password){
@@ -21,8 +17,8 @@ usersRouter.post("/create", async (req, res, next) =>{
             error: "Please send username, fullname and password in the request"
         });
     }
-    const user = await User.find({email: email});
-    if(user.length !== 0){
+    const user = await userService.getOne(email);
+    if(user){
 
         return res.status(400).json({
             error: "User with the specified email already exists"
@@ -51,18 +47,14 @@ usersRouter.post("/create", async (req, res, next) =>{
     
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
+    const createdUser = await userService.create({
         email: email,
         fullname: fullname,
         passwordHash: passwordHash
     });
 
-    
-
-    const savedUser = await newUser.save();
-
-    if(savedUser){
-        return res.status(201).json(savedUser);
+    if(createdUser){
+        return res.status(201).json(createdUser);
     }
     else{
         return res.status(501).json({
@@ -70,9 +62,9 @@ usersRouter.post("/create", async (req, res, next) =>{
         });
     }
 
-});
+};
 
-usersRouter.put("/edit", async (req, res, next)=>{
+const update = async (req, res, next)=>{
     const { email, fullname, password } = req.body;
 
     if( !email){
@@ -81,13 +73,15 @@ usersRouter.put("/edit", async (req, res, next)=>{
         });
     }
 
-    const user = await User.findOne({email: email});
-    var updateNeeded = false;
+    const user = await userService.getOne(email);
+
     if(!user){
         return res.status(400).json({
             error: "User with the specified email does not exist. Please check your email"
         });
     }
+
+    var updateNeeded = false;
     
     if(fullname){
         const fullnameValidation = validators.nameValidator(fullname);
@@ -109,16 +103,15 @@ usersRouter.put("/edit", async (req, res, next)=>{
                 error: passwordValidation.message
             })
         }
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        const passwordMatch = await bcrypt.compare(password, user.passwordHash);
         if(!passwordMatch){
             const passwordHash = await bcrypt.hash(password, 10);
             user.passwordHash = passwordHash;
             updateNeeded = true;
         }
     }  
-    
     if(updateNeeded){
-        const updatedUser = await user.save();
+        const updatedUser = await userService.update(user);
 
         if(updatedUser){
             return res.status(200).json(updatedUser);
@@ -135,9 +128,9 @@ usersRouter.put("/edit", async (req, res, next)=>{
         });
     }
     
-});
+};
 
-usersRouter.delete("/delete", async (req, res, next) =>{
+const remove = async (req, res, next) =>{
     const { email } = req.body;
 
     if( !email){
@@ -146,14 +139,14 @@ usersRouter.delete("/delete", async (req, res, next) =>{
         });
     }
 
-    const user = await User.findOne({email: email});
+    const user = await userService.getOne(email);
     if(!user){
         return res.status(400).json({
             error: "User with the specified email does not exist. Please check your email"
         });
     }
 
-    const deletedUser = await user.delete();
+    const deletedUser = await userService.remove(email);
     
     if(deletedUser){
         return res.status(204).send();
@@ -164,6 +157,6 @@ usersRouter.delete("/delete", async (req, res, next) =>{
         });
     }
 
-});
+};
 
-module.exports = { usersRouter: usersRouter};
+module.exports = { get, create, update, remove};

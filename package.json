@@ -4,8 +4,8 @@
   "description": "ASsignment 8 User CRUD",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon --inspect ./index.js",
+    "start": "node server.js",
+    "dev": "nodemon --inspect ./server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Raja Shekar",
